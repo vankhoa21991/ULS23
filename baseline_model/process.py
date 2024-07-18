@@ -28,7 +28,8 @@ class Uls23(SegmentationAlgorithm):
         start_time = time.time()
 
         # We need to create the correct output folder, determined by the interface, ourselves
-        os.makedirs("/output/images/ct-binary-uls/", exist_ok=True)
+        # os.makedirs("/output/images/ct-binary-uls/", exist_ok=True)
+        os.makedirs("output/images/ct-binary-uls/", exist_ok=True)
 
         self.load_model()
         spacings = self.load_data()
@@ -52,10 +53,15 @@ class Uls23(SegmentationAlgorithm):
         )
         # Initialize the network architecture, loads the checkpoint
         self.predictor.initialize_from_trained_model_folder(
-            "/opt/algorithm/nnunet/nnUNet_results/Dataset901_Filtered_FSUP/nnUNetTrainer_ULS_500_QuarterLR__nnUNetPlansNoRs__3d_fullres_resenc",
+            "architecture/nnUNet_results/Dataset901_Filtered_FSUP/nnUNetTrainer_ULS_500_QuarterLR__nnUNetPlansNoRs__3d_fullres_resenc",
             use_folds=("all"),
             checkpoint_name="checkpoint_best.pth",
         )
+        # self.predictor.initialize_from_trained_model_folder(
+        #     "/opt/algorithm/nnunet/nnUNet_results/Dataset901_Filtered_FSUP/nnUNetTrainer_ULS_500_QuarterLR__nnUNetPlansNoRs__3d_fullres_resenc",
+        #     use_folds=("all"),
+        #     checkpoint_name="checkpoint_best.pth",
+        # )
         end_model_load_time = time.time()
         print(f"Model loading runtime: {end_model_load_time - start_model_load_time}s")
 
@@ -68,17 +74,22 @@ class Uls23(SegmentationAlgorithm):
         """
         start_load_time = time.time()
         # Input directory is determined by the algorithm interface on GC
-        input_dir = Path("/input/images/stacked-3d-ct-lesion-volumes/")
-
+        # input_dir = Path("/input/images/stacked-3d-ct-lesion-volumes/")
+        input_dir = Path("architecture/input/images/stacked-3d-ct-lesion-volumes/")
+        os.makedirs("architecture/tmp/", exist_ok=True)
         # Load the spacings per VOI
-        with open(Path("/input/stacked-3d-volumetric-spacings.json"), 'r') as json_file:
+        # with open(Path("/input/stacked-3d-volumetric-spacings.json"), 'r') as json_file:
+        # with open(Path("/input/stacked_spacing_sample.json"), 'r') as json_file:
+        #     spacings = json.load(json_file)
+
+        with open(Path("architecture/input/stacked_spacing_sample.json"), 'r') as json_file:
             spacings = json.load(json_file)
 
         for input_file in input_dir.glob("*.mha"):
             self.id = input_file
 
             # Load and keep track of the image metadata
-            self.image_metadata = sitk.ReadImage(input_dir / input_file)
+            self.image_metadata = sitk.ReadImage(input_file)
 
             # Now get the image data
             image_data = sitk.GetArrayFromImage(self.image_metadata)
@@ -88,7 +99,7 @@ class Uls23(SegmentationAlgorithm):
 
                 # Unstack the VOI's, perform optional preprocessing and save
                 # them to individual binary files for memory-efficient access
-                np.save(f"/tmp/voi_{i}.npy", np.array([voi])) # Add dummy batch dimension for nnUnet
+                np.save(f"architecture/tmp/voi_{i}.npy", np.array([voi])) # Add dummy batch dimension for nnUnet
 
         end_load_time = time.time()
         print(f"Data pre-processing runtime: {end_load_time - start_load_time}s")
@@ -105,7 +116,7 @@ class Uls23(SegmentationAlgorithm):
         predictions = []
         for i, voi_spacing in enumerate(spacings):
             # Load the 3D array from the binary file
-            voi = torch.from_numpy(np.load(f"/tmp/voi_{i}.npy"))
+            voi = torch.from_numpy(np.load(f"architecture/tmp/voi_{i}.npy"))
             voi = voi.to(dtype=torch.float32)
 
             print(f'\nPredicting image of shape: {voi.shape}, spacing: {voi_spacing}')
@@ -140,8 +151,8 @@ class Uls23(SegmentationAlgorithm):
         mask = sitk.GetImageFromArray(predictions)
         mask.CopyInformation(self.image_metadata)
 
-        sitk.WriteImage(mask, f"/output/images/ct-binary-uls/{self.id.name}")
-        print("Output dir contents:", os.listdir("/output/images/ct-binary-uls/"))
+        sitk.WriteImage(mask, f"output/images/ct-binary-uls/{self.id.name}.nii.gz")
+        print("Output dir contents:", os.listdir("output/images/ct-binary-uls/"))
         print("Output batched image shape:", predictions.shape)
         end_postprocessing_time = time.time()
         print(f"Postprocessing & saving runtime: {end_postprocessing_time - start_postprocessing_time}s")

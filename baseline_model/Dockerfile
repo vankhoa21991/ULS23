@@ -1,11 +1,13 @@
-FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 AS base
+FROM nvcr.io/nvidia/pytorch:22.01-py3
 
-RUN rm /etc/apt/sources.list.d/cuda.list
+# RUN rm /etc/apt/sources.list.d/cuda.list
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
   apt-get install -y software-properties-common && \
   add-apt-repository ppa:deadsnakes/ppa && \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  export DEBIAN_FRONTEND=noninteractive && apt-get install -y \
   git \
   wget \
   unzip \
@@ -24,6 +26,8 @@ RUN python3.9 -m pip install --no-cache-dir --upgrade pip
 COPY requirements.txt /tmp/requirements.txt
 RUN python3.9 -m pip install --no-cache-dir -r /tmp/requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 
+RUN python3.9 -m pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+
 # Configure Git, clone the repository without checking out, then checkout the specific commit
 RUN git config --global advice.detachedHead false && \
     git clone --no-checkout https://github.com/MIC-DKFZ/nnUNet.git /opt/algorithm/nnunet/ && \
@@ -31,7 +35,7 @@ RUN git config --global advice.detachedHead false && \
     git checkout 947eafbb9adb5eb06b9171330b4688e006e6f301
 
 # Install a few dependencies that are not automatically installed
-RUN pip3 install \
+RUN python3.9 -m pip install \
         -e /opt/algorithm/nnunet \
         graphviz \
         onnx \
@@ -63,7 +67,7 @@ COPY --chown=user:user ./architecture/extensions/nnunetv2/ /opt/algorithm/nnunet
 COPY --chown=user:user ./architecture/nnUNet_results/ /opt/algorithm/nnunet/nnUNet_results/
 
 # Copy container testing data to docker
-#COPY --chown=user:user /architecture/input/ /input/
+COPY --chown=user:user ./architecture/input/ /input/
 
 # Set environment variable defaults
 ENV nnUNet_raw="/opt/algorithm/nnunet/nnUNet_raw" \
