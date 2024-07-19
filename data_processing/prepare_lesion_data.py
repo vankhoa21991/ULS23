@@ -35,7 +35,7 @@ def create_supervised_lesion_data(
         short_axis = False
         instance = False
         cca = False
-        if archive in ["NIH_LN/MED", "NIH_LN/ABD"]:
+        if archive in ["NIH_LN_MED", "NIH_LN_ABD"]:
             print("Using short-axis to determine minimum size (for lymph nodes).")
             short_axis = True
             instance = (
@@ -191,8 +191,8 @@ def create_semi_supervised_lesion_data(
 
 
 def main():
-    archives_folder = "..."
-    output_path = "..."
+    archives_folder = "/mnt/datalake/DS-lake/vankhoa/ULS23"
+    output_path = "/mnt/datalake/DS-lake/vankhoa/ULS23_preprocessed"
     os.makedirs(output_path, exist_ok=True)
 
     ####################################################################################################################
@@ -202,8 +202,8 @@ def main():
     ####################################################################################################################
     # [Archive name, lesion mask], -1 for instance segmented datasets like NIH_LN
     fully_supervised_archives = [
-        ["NIH_LN/MED", -1],
-        ["NIH_LN/ABD", -1],
+        ["NIH_LN_MED", -1],
+        ["NIH_LN_ABD", -1],
         ["DeepLesion3D", 1],
         ["diag_boneCT", 1],
         ["LiTS", 2],
@@ -211,9 +211,9 @@ def main():
         ["kits21-master", 2],
         ["LIDC-IDRI", 1],
         ["LNDb", 1],
-        ["MDSC/Task06_Lung", 1],
-        ["MDSC/Task07_Pancreas", 2],
-        ["MDSC/Task10_Colon", 1],
+        ["MDSC_Task06_Lung", 1],
+        ["MDSC_Task07_Pancreas", 2],
+        ["MDSC_Task10_Colon", 1],
     ]
     create_supervised_lesion_data(archives_folder, output_path, fully_supervised_archives)
 

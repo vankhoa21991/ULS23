@@ -12,10 +12,10 @@ from misc import load_predictions_json, long_and_short_axis_diameters, dice_coef
 
 class ULS23_evaluator():
     def __init__(self):
-        os.makedirs("/output", exist_ok=True)
-        self._ground_truth_path = Path("/opt/app/ground-truth/")
-        self._predictions_path = Path("/input/")
-        self._output_file = Path("/output/metrics.json")
+        os.makedirs("output", exist_ok=True)
+        self._ground_truth_path = Path("ground-truth/")
+        self._predictions_path = Path("../baseline_model/output/")
+        self._output_file = Path("output/metrics.json")
 
         self.stack_size = 100
         self.z = 128
